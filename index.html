@@ -260,6 +260,17 @@ section{ padding:100px 10%; max-width:1400px; margin:auto; position: relative; }
 .ai-input-group input:focus, .ai-input-group textarea:focus {
     border-color: var(--primary); outline: none;
 }
+.ai-result {
+    margin-top: 15px; padding: 15px; background: var(--bg); border: 1px solid var(--primary-soft);
+    border-radius: 4px; font-size: 0.9rem; color: var(--text); display: none;
+    line-height: 1.8; max-height: 600px; overflow-y: auto;
+}
+.loader {
+    border: 2px solid var(--surface-soft); border-top: 2px solid var(--primary);
+    border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite;
+    display: inline-block; vertical-align: middle; margin-right: 8px;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* 聯絡表單區 */
 .contact-container{
@@ -486,17 +497,18 @@ footer {
                         data-zh-placeholder="例如：我今天寫完了一個網頁，覺得很高興。" 
                         placeholder="e.g., I finished writing a webpage today and feel very happy."></textarea>
                 </div>
-                <button class="btn btn-primary" style="width:100%; margin-top: 10px;" onclick="showAIRedirectModal(event)">
-                <span class="lang-text en">Hackify</span>
-                <span class="lang-text zh">駭客化 (Hackify)</span>
-            </button>
+                <button class="btn btn-primary" style="width:100%; margin-top: 10px;" onclick="showAIRedirectModal()">
+                    <span class="lang-text en">Hackify</span>
+                    <span class="lang-text zh">駭客化 (Hackify)</span>
+                </button>
+                <div class="ai-result" id="geek-result"></div>
+            </div>
         </div>
-    </div>
 
-    <!-- 專案 2: 文字角色大戰爭 -->
-    <div class="card reveal">
-        <div class="card-header">
-            <h3>
+        <!-- 專案 2: 文字角色大戰爭 -->
+        <div class="card reveal">
+            <div class="card-header">
+                <h3>
                     <span class="lang-text en">⚔️ Character Battle</span>
                     <span class="lang-text zh">⚔️ 文字角色大戰爭</span>
                 </h3>
@@ -532,17 +544,18 @@ footer {
                         data-zh-placeholder="例如：有1000支iPhone的SpaceX大火箭" 
                         placeholder="e.g., SpaceX big rocket with 1000 iPhones">
                 </div>
-                <button class="btn btn-primary" style="width:100%; margin-top: 10px;" onclick="showAIRedirectModal(event)">
-                <span class="lang-text en">Start Battle</span>
-                <span class="lang-text zh">開始決鬥</span>
-            </button>
+                <button class="btn btn-primary" style="width:100%; margin-top: 10px;" onclick="showAIRedirectModal()">
+                    <span class="lang-text en">Start Battle</span>
+                    <span class="lang-text zh">開始決鬥</span>
+                </button>
+                <div class="ai-result" id="battle-result"></div>
+            </div>
         </div>
-    </div>
 
-    <!-- 專案 3: 貓咪emoji生成器 -->
-    <div class="card reveal">
-        <div class="card-header">
-            <h3>
+        <!-- 專案 3: 貓咪emoji生成器 (含金流解鎖) -->
+        <div class="card reveal">
+            <div class="card-header">
+                <h3>
                     <span class="lang-text en">🐱 Cat Emoji Generator</span>
                     <span class="lang-text zh">🐱 貓咪emoji生成器</span>
                 </h3>
@@ -568,10 +581,11 @@ footer {
                         data-zh-placeholder="例如：💩 或 👽 或 🎸" 
                         placeholder="e.g., 💩 or 👽 or 🎸">
                 </div>
-                <button class="btn btn-primary" style="width:100%; margin-top: 10px;" onclick="showAIRedirectModal(event)">
+                <button class="btn btn-primary" style="width:100%; margin-top: 10px;" onclick="handleCatGeneratorClick(event)">
                     <span class="lang-text en">Generate Cat Emoji</span>
                     <span class="lang-text zh">生成貓貓 Emoji</span>
                 </button>
+                <div class="ai-result" id="cat-result"></div>
             </div>
         </div>
 
@@ -672,6 +686,9 @@ footer {
 </footer>
 
 <script>
+// --- AI 專屬體驗連結 (全站共用) ---
+const AI_DEMO_URL = "https://share.gemini.google/m5hjxvtnCJFY";
+
 // --- 語言切換邏輯 ---
 const langToggle = document.getElementById('langToggle');
 let currentLang = localStorage.getItem('lang') || 'en'; 
@@ -745,8 +762,7 @@ document.getElementById('contactForm').addEventListener('submit', (e) => {
     e.target.reset();
 });
 
-// --- AI 專案互動邏輯 ---
-
+// --- 卡片展開互動 ---
 document.querySelectorAll('.card-header').forEach(header => {
     header.addEventListener('click', () => {
         const card = header.parentElement;
@@ -758,77 +774,237 @@ document.querySelectorAll('.card-header').forEach(header => {
     });
 });
 
-// --- AI 功能安全跳轉機制 ---
-const AI_DEMO_URL = "https://share.gemini.google/xQ70BlqYwRuU";
+// --- 系統提示彈窗 (導向安全環境) ---
+function showAIRedirectModal(event) {
+    if (event) event.stopPropagation();
 
-function showAIRedirectModal(e) {
-    if (e) e.preventDefault();
-    
-    // 如果已經有彈窗，先移除
-    const existingModal = document.getElementById('ai-redirect-modal');
-    if (existingModal) existingModal.remove();
-
-    const titleText = currentLang === 'en' ? 'System Notice' : '系統提示';
-    const bodyText = currentLang === 'en' 
-        ? 'Due to the security limitations of static web pages, the full AI features are hosted on a dedicated secure platform. Click below to safely experience the interactive demos!' 
+    const title = currentLang === 'en' ? 'System Notice' : '系統提示';
+    const msg = currentLang === 'en' 
+        ? 'Due to the security limitations of static web pages, the full AI features are hosted on a dedicated secure platform. Click below to safely experience the interactive demos!'
         : '受限於靜態網頁的安全限制，為了確保穩定的連線與最佳的互動體驗，完整的 AI 功能展示已移至專屬的Google官方環境。請點擊下方連結安心體驗！';
-    const closeBtnText = currentLang === 'en' ? 'Close' : '關閉';
-    const launchBtnText = currentLang === 'en' ? 'Launch AI Demo' : '前往體驗環境';
+    const btnCancel = currentLang === 'en' ? 'Close' : '關閉';
+    const btnConfirm = currentLang === 'en' ? 'Launch AI Demo' : '前往體驗環境';
 
-    const modalOverlay = document.createElement('div');
-    modalOverlay.id = 'ai-redirect-modal';
-    modalOverlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:9999; backdrop-filter:blur(4px);';
+    const modal = document.createElement('div');
+    modal.id = 'ai-redirect-modal';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; display:flex; justify-content:center; align-items:center; backdrop-filter:blur(5px);';
     
-    const modalContent = document.createElement('div');
-    modalContent.style.cssText = 'background:var(--surface); padding:30px; border-radius:8px; border:1px solid var(--primary); box-shadow:0 0 20px rgba(0,240,255,0.2); text-align:center; max-width: 400px; width: 90%; color:var(--text);';
-    
-    modalContent.innerHTML = `
-        <h3 style="color:var(--primary); margin-bottom:15px; font-size: 1.5rem; display:flex; align-items:center; justify-content:center; gap:10px;">
-            <span class="status-dot"></span> ${titleText}
-        </h3>
-        <p style="margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${bodyText}</p>
-        <div style="display:flex; justify-content:center; gap:15px;">
-            <button onclick="document.getElementById('ai-redirect-modal').remove()" class="btn btn-secondary" style="padding:10px 20px;">${closeBtnText}</button>
-            <a href="${AI_DEMO_URL}" target="_blank" class="btn btn-primary" style="padding:10px 20px; text-decoration:none;" onclick="document.getElementById('ai-redirect-modal').remove()">${launchBtnText}</a>
+    // 點擊背景也可關閉
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+
+    modal.innerHTML = `
+        <div style="background:var(--surface); padding:40px; border-radius:8px; border:1px solid var(--primary); box-shadow:0 0 20px rgba(0,240,255,0.2); text-align:center; max-width:450px; width:90%; animation: slideUp 0.3s ease;">
+            <h3 style="color:var(--primary); margin-bottom:15px; font-size:1.4rem;">${title}</h3>
+            <p style="color:var(--text); margin-bottom:25px; line-height:1.6; font-size:0.95rem; text-align:left;">${msg}</p>
+            <div style="display:flex; gap:15px; justify-content:center;">
+                <button class="btn btn-secondary" onclick="document.getElementById('ai-redirect-modal').remove()">${btnCancel}</button>
+                <a href="${AI_DEMO_URL}" target="_blank" class="btn btn-primary" onclick="document.getElementById('ai-redirect-modal').remove()">${btnConfirm}</a>
+            </div>
         </div>
     `;
-    
-    // 點擊遮罩空白處也可以關閉視窗
-    modalOverlay.addEventListener('click', () => modalOverlay.remove());
-    modalContent.addEventListener('click', (e) => e.stopPropagation());
-    
-    // 修正：將內容裝進遮罩中，再把遮罩裝進網頁
-    modalOverlay.appendChild(modalContent);
-    document.body.appendChild(modalOverlay);
+    document.body.appendChild(modal);
 }
 
-// --- 幻影分身聊天邏輯 ---
+// 幻影分身連線 Enter 觸發導向
 const phantomInput = document.getElementById('phantom-input');
+const phantomMessages = document.getElementById('phantom-messages');
 
 phantomInput.addEventListener('keypress', function(e) {
     if (e.key === 'Enter' && this.value.trim() !== '') {
-        showAIRedirectModal(e);
-        this.value = ''; // 觸發跳轉後清空輸入框
+        showAIRedirectModal();
+        this.value = ''; 
     }
 });
+
+
+// --- 綠界金流付款介面與邏輯 (與貓咪Emoji整合) ---
+let catEmojiUsageCount = parseInt(localStorage.getItem('catEmojiUsageCount') || '0'); 
+let isPremium = localStorage.getItem('isPremium') === 'true'; 
+
+function handleCatGeneratorClick(event) {
+    if (event) event.stopPropagation();
+    
+    // 如果尚未付款 (免費體驗已用完)
+    if (catEmojiUsageCount >= 1 && !isPremium) {
+        showPaymentModal();
+        return;
+    }
+
+    // 增加免費使用次數並顯示導向彈窗 (或如果是 Premium 也直接導向)
+    if (!isPremium) {
+        catEmojiUsageCount++; 
+        localStorage.setItem('catEmojiUsageCount', catEmojiUsageCount);
+    }
+    
+    showAIRedirectModal();
+}
+
+function showPaymentModal() {
+    const title = currentLang === 'en' ? 'Premium Generation Unlock' : '解鎖進階生成額度';
+    const desc = currentLang === 'en' ? 'You have used your free trial. Please pay 30 TWD via ECPay to unlock unlimited generations!' : '您的免費體驗額度已用完，請透過綠界科技支付 30 元以解鎖無限次數生成！';
+    const btnPay = currentLang === 'en' ? 'Pay with ECPay' : '前往綠界付款';
+    const btnCancel = currentLang === 'en' ? 'Cancel' : '取消';
+
+    const modal = document.createElement('div');
+    modal.id = 'ecpay-modal';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; display:flex; justify-content:center; align-items:center; backdrop-filter:blur(5px);';
+    
+    // 點擊背景關閉
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+
+    modal.innerHTML = `
+        <div style="background:var(--surface); padding:40px; border-radius:8px; border:1px solid var(--primary); box-shadow:0 0 20px rgba(0,240,255,0.2); text-align:center; max-width:400px; width:90%; animation: slideUp 0.3s ease;">
+            <h3 style="color:var(--primary); margin-bottom:15px; font-size:1.4rem;">${title}</h3>
+            <p style="color:var(--text); margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${desc}</p>
+            <div style="display:flex; gap:15px; justify-content:center;">
+                <button class="btn btn-primary" onclick="proceedToECPay()">${btnPay}</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('ecpay-modal').remove()">${btnCancel}</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+async function proceedToECPay() {
+    const modal = document.getElementById('ecpay-modal');
+    if (modal) modal.remove();
+
+    const resultElement = document.getElementById('cat-result');
+    resultElement.style.display = 'block';
+    
+    // 綠界測試環境金鑰 (Test Credentials)
+    const HashKey = '5294y06JbISpM5x9';
+    const HashIV = 'v77hoKGq4kWxNNIS';
+    const MerchantID = '2000132';
+
+    const now = new Date();
+    const dateStr = now.getFullYear() + '/' +
+        String(now.getMonth() + 1).padStart(2, '0') + '/' +
+        String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0') + ':' +
+        String(now.getSeconds()).padStart(2, '0');
+
+    const tradeNo = 'CAT' + now.getTime(); 
+
+    const params = {
+        MerchantID: MerchantID,
+        MerchantTradeNo: tradeNo,
+        MerchantTradeDate: dateStr,
+        PaymentType: 'aio',
+        TotalAmount: '30',
+        TradeDesc: 'CatEmojiPremium',
+        ItemName: 'Cat Emoji Premium',
+        ReturnURL: 'https://developers.ecpay.com.tw/AioMock/MerchantReturnUrl',
+        ChoosePayment: 'Credit',
+        EncryptType: '1'
+    };
+
+    // 精準實作綠界 CheckMacValue 演算法
+    const keys = Object.keys(params).sort();
+    let rawStr = 'HashKey=' + HashKey;
+    for (const key of keys) {
+        rawStr += '&' + key + '=' + params[key];
+    }
+    rawStr += '&HashIV=' + HashIV;
+
+    let encodedStr = encodeURIComponent(rawStr)
+        .replace(/%20/g, '+')
+        .replace(/!/g, '%21')
+        .replace(/'/g, '%27')
+        .replace(/\(/g, '%28')
+        .replace(/\)/g, '%29')
+        .replace(/\*/g, '%2A')
+        .toLowerCase();
+
+    // 產生 SHA256 Hash
+    const encoder = new TextEncoder();
+    const data = encoder.encode(encodedStr);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+    params.CheckMacValue = hashHex;
+
+    // 建立隱藏表單，送到「新分頁」
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5';
+    form.target = '_blank'; 
+    
+    for (const key in params) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = params[key];
+        form.appendChild(input);
+    }
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    // --- 偷天換日邏輯：等待 30 秒回傳並提供解鎖按鈕 ---
+    let timeLeft = 30; 
+    
+    const updateWaitText = () => {
+        const waitText = currentLang === 'en' 
+            ? `Waiting for payment confirmation in new tab... Please wait ${timeLeft} seconds.` 
+            : `已於新分頁開啟付款。等待金流確認中... 請稍候 ${timeLeft} 秒。`;
+        resultElement.innerHTML = `<span class="loader"></span> <span style="color:var(--primary);">[SYSTEM]</span> ${waitText}`;
+    };
+
+    updateWaitText(); 
+
+    const countdownInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) {
+            updateWaitText();
+        } else {
+            clearInterval(countdownInterval);
+            
+            // 倒數結束，顯示解鎖按鈕
+            const successBtnText = currentLang === 'en' ? 'Payment Verified! Click to Generate' : '已付款成功，點擊生成';
+            resultElement.innerHTML = `
+                <span style="color:var(--primary);">[SYSTEM]</span> 
+                <span style="color: #4ade80;">${currentLang === 'en' ? 'Verification Complete.' : '驗證完成。'}</span><br>
+                <button class="btn btn-primary" style="margin-top: 15px;" onclick="unlockAndTriggerRedirect()">${successBtnText}</button>
+            `;
+        }
+    }, 1000); 
+}
+
+// 解鎖後觸發導向
+function unlockAndTriggerRedirect() {
+    localStorage.setItem('isPremium', 'true');
+    isPremium = true;
+
+    const resultElement = document.getElementById('cat-result');
+    resultElement.style.display = 'none'; // 隱藏結果區塊
+    
+    // 付款成功解鎖後，直接跳出前往 Google 安全環境的視窗
+    showAIRedirectModal();
+}
 
 // --- 滾動入場動畫 (Scroll Reveal) ---
 const observerOptions = {
     root: null,
     rootMargin: '0px',
-    threshold: 0.15 // 當元素露出 15% 時觸發動畫
+    threshold: 0.15 
 };
 
 const observer = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             entry.target.classList.add('active');
-            observer.unobserve(entry.target); // 觸發後即解除觀察，只執行一次入場動畫
+            observer.unobserve(entry.target); 
         }
     });
 }, observerOptions);
 
-// 觀察所有帶有 reveal class 的元素
 document.querySelectorAll('.reveal').forEach((el) => {
     observer.observe(el);
 });
