@@ -260,17 +260,6 @@ section{ padding:100px 10%; max-width:1400px; margin:auto; position: relative; }
 .ai-input-group input:focus, .ai-input-group textarea:focus {
     border-color: var(--primary); outline: none;
 }
-.ai-result {
-    margin-top: 15px; padding: 15px; background: var(--bg); border: 1px solid var(--primary-soft);
-    border-radius: 4px; font-size: 0.9rem; color: var(--text); display: none;
-    line-height: 1.8; max-height: 600px; overflow-y: auto;
-}
-.loader {
-    border: 2px solid var(--surface-soft); border-top: 2px solid var(--primary);
-    border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite;
-    display: inline-block; vertical-align: middle; margin-right: 8px;
-}
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* 聯絡表單區 */
 .contact-container{
@@ -501,7 +490,6 @@ footer {
                 <span class="lang-text en">Hackify</span>
                 <span class="lang-text zh">駭客化 (Hackify)</span>
             </button>
-            <div class="ai-result" id="geek-result"></div>
         </div>
     </div>
 
@@ -548,7 +536,6 @@ footer {
                 <span class="lang-text en">Start Battle</span>
                 <span class="lang-text zh">開始決鬥</span>
             </button>
-            <div class="ai-result" id="battle-result"></div>
         </div>
     </div>
 
@@ -585,7 +572,6 @@ footer {
                     <span class="lang-text en">Generate Cat Emoji</span>
                     <span class="lang-text zh">生成貓貓 Emoji</span>
                 </button>
-                <div class="ai-result" id="cat-result"></div>
             </div>
         </div>
 
@@ -773,7 +759,7 @@ document.querySelectorAll('.card-header').forEach(header => {
 });
 
 // --- AI 功能安全跳轉機制 ---
-const AI_DEMO_URL = "https://share.gemini.google/aWWT71bonTBc";
+const AI_DEMO_URL = "https://share.gemini.google/n8gF23FpFFND";
 
 function showAIRedirectModal(e) {
     if (e) e.preventDefault();
